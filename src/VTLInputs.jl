@@ -69,6 +69,7 @@ end
     point_to_triangle_distance(point, triangle) -> Float64
 
 Compute the unsigned distance from a point to a triangle in 3D space.
+Handles degenerate triangles (zero-area triangles) by computing distance to the nearest vertex.
 """
 function point_to_triangle_distance(point::SVector{3,T}, tri::Triangle{T}) where {T<:Real}
     # Edge vectors
@@ -85,9 +86,23 @@ function point_to_triangle_distance(point::SVector{3,T}, tri::Triangle{T}) where
     d = dot(e0, v0)
     e = dot(e1, v0)
     
+    eps_val = T(1e-12)
     det = a * c - b * b
+    
+    # Handle degenerate triangles (zero area)
+    if abs(det) < eps_val
+        # Triangle is degenerate, compute distance to vertices
+        d1 = norm(point - tri.v1)
+        d2 = norm(point - tri.v2)
+        d3 = norm(point - tri.v3)
+        return min(d1, d2, d3)
+    end
+    
     s = b * e - c * d
     t = b * d - a * e
+    
+    # Safe division helper
+    safe_div(num, den) = abs(den) < eps_val ? zero(T) : num / den
     
     if s + t <= det
         if s < 0
@@ -95,20 +110,20 @@ function point_to_triangle_distance(point::SVector{3,T}, tri::Triangle{T}) where
                 # Region 4
                 if d < 0
                     t = zero(T)
-                    s = clamp(-d / a, zero(T), one(T))
+                    s = clamp(safe_div(-d, a), zero(T), one(T))
                 else
                     s = zero(T)
-                    t = clamp(-e / c, zero(T), one(T))
+                    t = clamp(safe_div(-e, c), zero(T), one(T))
                 end
             else
                 # Region 3
                 s = zero(T)
-                t = clamp(-e / c, zero(T), one(T))
+                t = clamp(safe_div(-e, c), zero(T), one(T))
             end
         elseif t < 0
             # Region 5
             t = zero(T)
-            s = clamp(-d / a, zero(T), one(T))
+            s = clamp(safe_div(-d, a), zero(T), one(T))
         else
             # Region 0 (inside triangle)
             inv_det = one(T) / det
@@ -123,11 +138,11 @@ function point_to_triangle_distance(point::SVector{3,T}, tri::Triangle{T}) where
             if tmp1 > tmp0
                 numer = tmp1 - tmp0
                 denom = a - 2 * b + c
-                s = clamp(numer / denom, zero(T), one(T))
+                s = clamp(safe_div(numer, denom), zero(T), one(T))
                 t = one(T) - s
             else
                 s = zero(T)
-                t = clamp(-e / c, zero(T), one(T))
+                t = clamp(safe_div(-e, c), zero(T), one(T))
             end
         elseif t < 0
             # Region 6
@@ -136,17 +151,17 @@ function point_to_triangle_distance(point::SVector{3,T}, tri::Triangle{T}) where
             if tmp1 > tmp0
                 numer = tmp1 - tmp0
                 denom = a - 2 * b + c
-                t = clamp(numer / denom, zero(T), one(T))
+                t = clamp(safe_div(numer, denom), zero(T), one(T))
                 s = one(T) - t
             else
                 t = zero(T)
-                s = clamp(-d / a, zero(T), one(T))
+                s = clamp(safe_div(-d, a), zero(T), one(T))
             end
         else
             # Region 1
             numer = (c + e) - (b + d)
             denom = a - 2 * b + c
-            s = clamp(numer / denom, zero(T), one(T))
+            s = clamp(safe_div(numer, denom), zero(T), one(T))
             t = one(T) - s
         end
     end
@@ -300,6 +315,11 @@ sdf = compute_sdf((0.0, 0.0, 0.0), mesh)
 """
 function compute_sdf(point, mesh::Mesh{T}) where {T<:Real}
     p = SVector{3,T}(point...)
+    
+    # Handle empty mesh
+    if isempty(mesh.triangles)
+        return T(Inf)
+    end
     
     min_dist = T(Inf)
     closest_tri_idx = 1

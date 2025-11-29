@@ -127,4 +127,18 @@ const TESTDATA_DIR = joinpath(@__DIR__, "testdata")
         @test sdf_outside > 0
     end
     
+    @testset "Edge cases" begin
+        # Empty mesh
+        empty_mesh = Mesh(Triangle{Float64}[])
+        @test compute_sdf((0.0, 0.0, 0.0), empty_mesh) == Inf
+        
+        # Degenerate triangle (zero area - all vertices same)
+        v = SVector{3,Float64}(1.0, 1.0, 1.0)
+        degenerate_tri = Triangle(v, v, v)
+        degenerate_mesh = Mesh([degenerate_tri])
+        sdf = compute_sdf((0.0, 0.0, 0.0), degenerate_mesh)
+        @test isfinite(sdf)  # Should not crash
+        @test abs(abs(sdf) - sqrt(3.0)) < 0.01  # Distance from origin to (1,1,1) should be sqrt(3)
+    end
+    
 end
