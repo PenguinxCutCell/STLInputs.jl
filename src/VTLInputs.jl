@@ -6,7 +6,7 @@ using LinearAlgebra
 using MeshIO
 using StaticArrays
 
-export load_stl, compute_sdf, compute_sdf_on_grid, Triangle, Mesh
+export load_stl, compute_sdf, compute_sdf_on_grid, compute_stl_sdf, Triangle, Mesh
 
 """
     Triangle{T}
@@ -409,6 +409,73 @@ function compute_sdf_on_grid(xs, ys, zs, mesh::Mesh{T}) where {T<:Real}
     end
     
     return sdf
+end
+
+"""
+    compute_stl_sdf(filepath::AbstractString; dims::Int=3) -> Function
+
+Load an STL file and return a signed distance function.
+
+# Arguments
+- `filepath::AbstractString`: Path to the STL file.
+- `dims::Int=3`: Dimensionality of the SDF function. Use `3` for 3D `(x, y, z) -> sdf` 
+  or `2` for 2D `(x, y) -> sdf` (projects to z=0 plane).
+
+# Returns
+- For `dims=3`: A function `(x, y, z) -> Float64` that computes the signed distance.
+- For `dims=2`: A function `(x, y) -> Float64` that computes the signed distance at z=0.
+
+# Example
+```julia
+# 3D SDF function
+sdf_3d = compute_stl_sdf("model.stl")
+distance = sdf_3d(0.5, 0.5, 0.5)
+
+# 2D SDF function (evaluates at z=0)
+sdf_2d = compute_stl_sdf("model.stl", dims=2)
+distance = sdf_2d(0.5, 0.5)
+```
+"""
+function compute_stl_sdf(filepath::AbstractString; dims::Int=3)
+    mesh = load_stl(filepath)
+    return compute_stl_sdf(mesh; dims=dims)
+end
+
+"""
+    compute_stl_sdf(mesh::Mesh; dims::Int=3) -> Function
+
+Create a signed distance function from a mesh.
+
+# Arguments
+- `mesh::Mesh`: The mesh to compute distances to.
+- `dims::Int=3`: Dimensionality of the SDF function. Use `3` for 3D `(x, y, z) -> sdf` 
+  or `2` for 2D `(x, y) -> sdf` (projects to z=0 plane).
+
+# Returns
+- For `dims=3`: A function `(x, y, z) -> Float64` that computes the signed distance.
+- For `dims=2`: A function `(x, y) -> Float64` that computes the signed distance at z=0.
+
+# Example
+```julia
+mesh = load_stl("model.stl")
+
+# 3D SDF function
+sdf_3d = compute_stl_sdf(mesh)
+distance = sdf_3d(0.5, 0.5, 0.5)
+
+# 2D SDF function (evaluates at z=0)
+sdf_2d = compute_stl_sdf(mesh, dims=2)
+distance = sdf_2d(0.5, 0.5)
+```
+"""
+function compute_stl_sdf(mesh::Mesh{T}; dims::Int=3) where {T<:Real}
+    if dims == 3
+        return (x, y, z) -> compute_sdf((x, y, z), mesh)
+    elseif dims == 2
+        return (x, y) -> compute_sdf((x, y, T(0)), mesh)
+    else
+        throw(ArgumentError("dims must be 2 or 3, got $dims"))
+    end
 end
 
 end # module

@@ -141,4 +141,46 @@ const TESTDATA_DIR = joinpath(@__DIR__, "testdata")
         @test abs(abs(sdf) - sqrt(3.0)) < 0.01  # Distance from origin to (1,1,1) should be sqrt(3)
     end
     
+    @testset "compute_stl_sdf function object" begin
+        cube_path = joinpath(TESTDATA_DIR, "cube.stl")
+        
+        # Test 3D SDF function
+        sdf_3d = compute_stl_sdf(cube_path)
+        @test sdf_3d isa Function
+        @test sdf_3d(0.5, 0.5, 0.5) < 0  # Inside cube
+        @test sdf_3d(5.0, 5.0, 5.0) > 0  # Outside cube
+        
+        # Test 2D SDF function (at z=0 plane)
+        sdf_2d = compute_stl_sdf(cube_path, dims=2)
+        @test sdf_2d isa Function
+        @test sdf_2d(0.5, 0.5) <= 0  # Inside or on cube at z=0 (z=0 is the bottom face)
+        @test sdf_2d(5.0, 5.0) > 0  # Outside cube at z=0
+        
+        # Test from mesh directly
+        mesh = load_stl(cube_path)
+        sdf_from_mesh = compute_stl_sdf(mesh)
+        @test sdf_from_mesh isa Function
+        @test sdf_from_mesh(0.5, 0.5, 0.5) < 0
+    end
+    
+    @testset "compute_stl_sdf 2D mode" begin
+        # Create a simple triangle mesh in XY plane
+        v1 = SVector{3,Float64}(0.0, 0.0, 0.0)
+        v2 = SVector{3,Float64}(1.0, 0.0, 0.0)
+        v3 = SVector{3,Float64}(0.5, 1.0, 0.0)
+        tri = Triangle(v1, v2, v3)
+        mesh = Mesh([tri])
+        
+        # 2D SDF should work
+        sdf_2d = compute_stl_sdf(mesh, dims=2)
+        @test sdf_2d isa Function
+        
+        # Point on the triangle should have near-zero distance
+        @test abs(sdf_2d(0.5, 0.5)) < 0.1
+        
+        # 3D SDF should also work
+        sdf_3d = compute_stl_sdf(mesh, dims=3)
+        @test abs(sdf_3d(0.5, 0.5, 0.0)) < 0.1
+    end
+    
 end
