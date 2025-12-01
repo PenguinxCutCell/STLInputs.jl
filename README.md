@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/PenguinxCutCell/VTLInputs.jl/workflows/CI/badge.svg)](https://github.com/PenguinxCutCell/VTLInputs.jl/actions)
 
-A Julia package for reading STL files and computing signed distance functions (SDF) for 3D objects.
+A thin wrapper around [SignedDistanceField.jl](https://gitlab.emse.fr/pierrat/SignedDistanceField.jl) to generate signed distance fields from STL/OBJ meshes and expose them as callable SDF functions.
 
 ## Installation
 
