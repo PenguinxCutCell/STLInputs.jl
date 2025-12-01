@@ -1,0 +1,24 @@
+name = "VTLInputs"
+uuid = "53059165-fecc-4ffc-ba8c-3ad93e0f077a"
+authors = ["VTLInputs Contributors"]
+version = "0.1.0"
+
+[deps]
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MeshIO = "7269a6da-0436-5bbc-96c2-40638cbb6118"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[compat]
+FileIO = "1"
+GeometryBasics = "0.4"
+MeshIO = "0.4"
+StaticArrays = "1"
+julia = "1.6"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
